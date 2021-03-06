@@ -1,9 +1,6 @@
-require 'logger'
 require 'time'
 require 'twitter'
 require 'dotenv/load'
-
-LOGGER = Logger.new('/tmp/alone-in-the-dark.log')
 
 class DowntimeTracker
   def run_forever
@@ -51,7 +48,7 @@ class Internet
     PUBLIC_DNS.each do |ip, name|
       ip_down = ip_down?(ip)
       down ||= ip_down
-      LOGGER.warn "#{name} (#{ip}) is unreachable" if ip_down
+      puts "#{name} (#{ip}) is unreachable" if ip_down
     end
 
     down
