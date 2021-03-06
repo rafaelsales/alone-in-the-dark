@@ -3,7 +3,7 @@ require 'time'
 require 'twitter'
 require 'dotenv/load'
 
-LOGGER = Logger.new('/tmp/downtime-tracker.log')
+LOGGER = Logger.new('/tmp/alone-in-the-dark.log')
 
 class DowntimeTracker
   def run_forever

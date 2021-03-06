@@ -1,0 +1,15 @@
+[Unit]
+Description=Alone In The Dark
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=pi
+WorkingDirectory=/home/pi/alone-in-the-dark/
+ExecStart=/home/pi/alone-in-the-dark/alone-in-the-dark
+
+[Install]
+WantedBy=multi-user.target
