@@ -70,7 +70,7 @@ class TwitterClient
     config.access_token_secret = ENV.fetch('TWITTER_TOKEN_SECRET')
   end
   MESSAGE_TEMPLATE = ENV.fetch('MESSAGE_TEMPLATE')
-  MESSAGE_THREAD_ID = ENV['MESSAGE_THREAD_ID']
+  MESSAGE_THREAD_ID = ENV['MESSAGE_THREAD_ID'].yield_self { |s| s if s != '' }
   ISP_BILL_AMOUNT = ENV.fetch('ISP_BILL_AMOUNT').to_f
 
   def initialize(downtime_minutes)
