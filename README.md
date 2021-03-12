@@ -10,8 +10,8 @@ your connection is down.
 
 ## Recommended Setup
 
-I use this app on Raspberry Pi 3 - even though it has Wi-Fi, I prefer to connect
-use the ethernet port directly into my main ISP router to make sure that the app
+I use this app on Raspberry Pi 3 - even though it has Wi-Fi, I prefer to
+use the ethernet port into my main ISP router to make sure that the app
 isn't affected by a spotty WiFi connection.
 
 ## How to setup
