@@ -12,7 +12,7 @@ class DowntimeTracker
           self.down_since = Time.now
           puts 'Internet is down!'
         else
-          print '.'
+          print_progress_bar
         end
       elsif !down
         TwitterClient.new(downtime_minutes).post
@@ -28,6 +28,17 @@ class DowntimeTracker
 
   attr_accessor :down_since
 
+  def print_progress_bar
+    @print_columns ||= 0
+    @print_columns += 1
+    print '.'
+
+    if @print_columns == 120
+      puts ''
+      @print_columns = 0
+    end
+  end
+
   def downtime_minutes
     ((Time.now - down_since) / 60).ceil
   end
@@ -39,7 +50,7 @@ class Internet
     '8.8.8.8' => 'Google Primary',
     '8.8.4.4' => 'Google Secondary',
   }
-  TIMEOUT = 1
+  TIMEOUT = 3
   ATTEMPTS = 1
 
   def down?
@@ -57,8 +68,8 @@ class Internet
   private
 
   def ip_down?(ip)
-    output = `ping -c #{ATTEMPTS} -t #{TIMEOUT} #{ip} 2>&1`
-    output.include?('0 packets received')
+    output = `ping -c #{ATTEMPTS} -W #{TIMEOUT} #{ip} 2>&1`
+    output.include?('100% packet loss')
   end
 end
 

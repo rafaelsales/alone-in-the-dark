@@ -8,6 +8,7 @@ Type=simple
 Restart=always
 RestartSec=1
 User=pi
+Group=pi
 WorkingDirectory=/home/pi/alone-in-the-dark/
 ExecStart=/home/pi/alone-in-the-dark/alone-in-the-dark
 
