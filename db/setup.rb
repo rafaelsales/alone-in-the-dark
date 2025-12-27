@@ -14,7 +14,12 @@ db.execute <<-SQL
     success INTEGER NOT NULL,
     dns_ip TEXT,
     dns_latency INTEGER,
-    router_state BLOB  -- Use jsonb() when inserting for binary JSON storage
+    router_state BLOB,  -- Use jsonb() when inserting for binary JSON storage
+    weather_temperature_celsius REAL,
+    weather_humidity_percentage INTEGER,
+    weather_precipitation_mm REAL,
+    weather_wind_speed_kmh REAL,
+    weather_cloud_cover_percentage INTEGER
   );
 SQL
 

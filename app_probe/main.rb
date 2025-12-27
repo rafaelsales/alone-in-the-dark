@@ -2,8 +2,14 @@ require 'time'
 require 'pry'
 require 'sqlite3'
 require 'dotenv/load'
+require 'net/http'
+require 'json'
 
 DATABASE_PATH = File.join(__dir__, '..', 'db', 'pings.db')
+
+LATITUDE = ENV.fetch('LATITUDE', '-24.00').to_f
+LONGITUDE = ENV.fetch('LONGITUDE', '-47.00').to_f
+TIMEZONE = ENV.fetch('TIMEZONE', 'America/Sao_Paulo')
 
 class PingTracker
   def initialize
@@ -13,7 +19,8 @@ class PingTracker
   def run_forever
     loop do
       result = Internet.new.check
-      record_ping(result)
+      weather = Weather.new.fetch
+      record_ping(result, weather)
       print_progress_bar(result[:success])
       sleep 30
     end
@@ -21,19 +28,26 @@ class PingTracker
 
   private
 
-  def record_ping(result)
+  def record_ping(ping, weather)
     @db.execute(
       <<-SQL,
         INSERT INTO pings
-          (datetime, success, dns_ip, dns_latency, router_state)
-          VALUES (?, ?, ?, ?, JSONB(?))
+          (datetime, success, dns_ip, dns_latency, router_state,
+           weather_temperature_celsius, weather_humidity_percentage,
+           weather_precipitation_mm, weather_wind_speed_kmh, weather_cloud_cover_percentage)
+          VALUES (?, ?, ?, ?, JSONB(?), ?, ?, ?, ?, ?)
       SQL
       [
         Time.now.utc.strftime('%Y-%m-%d %H:%M:%S'),
-        result.fetch(:success) ? 1 : 0,
-        result.fetch(:dns_ip),
-        result.fetch(:dns_latency),
-        result.fetch(:router_state)
+        ping.fetch(:success) ? 1 : 0,
+        ping.fetch(:dns_ip),
+        ping.fetch(:dns_latency),
+        ping.fetch(:router_state),
+        weather.fetch(:temperature_celsius),
+        weather.fetch(:humidity_percentage),
+        weather.fetch(:precipitation_mm),
+        weather.fetch(:wind_speed_kmh),
+        weather.fetch(:cloud_cover_percentage)
       ]
     )
   end
@@ -96,3 +110,28 @@ class Internet
   end
 end
 
+class Weather
+  API_URL = 'https://api.open-meteo.com/v1/forecast?' \
+            "latitude=#{LATITUDE}&longitude=#{LONGITUDE}" \
+            '&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,cloud_cover' \
+            "&timezone=#{TIMEZONE}&forecast_days=1"
+
+  def fetch
+    data =
+      begin
+        response = Net::HTTP.get(URI(API_URL))
+        JSON.parse(response)
+      rescue => e
+        warn "Weather fetch failed: #{e.message}"
+        []
+      end
+
+    {
+      temperature_celsius: data.dig('current', 'temperature_2m'),
+      humidity_percentage: data.dig('current', 'relative_humidity_2m'),
+      precipitation_mm: data.dig('current', 'precipitation'),
+      wind_speed_kmh: data.dig('current', 'wind_speed_10m'),
+      cloud_cover_percentage: data.dig('current', 'cloud_cover')
+    }
+  end
+end
