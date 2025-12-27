@@ -6,6 +6,6 @@ ENV['BUNDLE_GEMFILE'] ||= File.expand_path("../Gemfile", Pathname.new(__FILE__).
 require 'rubygems'
 require 'bundler/setup'
 
-require './app.rb'
+require './app_probe/main.rb'
 
-DowntimeTracker.new.run_forever
+PingTracker.new.run_forever

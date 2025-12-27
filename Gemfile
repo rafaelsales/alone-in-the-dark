@@ -4,5 +4,6 @@ source "https://rubygems.org"
 
 git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 
-gem 'twitter', '~> 7.0'
-gem 'dotenv', '~> 2.7'
+gem 'dotenv', '~> 3'
+gem 'sqlite3', '~> 2'
+gem 'pry'

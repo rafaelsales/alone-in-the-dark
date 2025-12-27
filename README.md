@@ -1,4 +1,4 @@
-# Alone In The Dark
+# Probe
 
 A daemon service that notifies on Twitter when your ISP is down.
 
@@ -20,7 +20,7 @@ isn't affected by a spotty WiFi connection.
 1. Clone the repo on the computer that will running the daemon
 1. Install dependencies: `gem install bundler && bundle install`
 1. Copy `.env.sample` to `.env` and customize the environment variables
-1. Run `./alone-in-the-dark` to start/test the app
+1. Run `./probe` to start/test the app
    If the app works ok, press `CTRL+C` to stop.
    It's recommended to simulate a broken connection to make sure everything works.
 1. Run `./install-systemd-service.sh` to install the daemon on SystemD
@@ -29,4 +29,4 @@ Done - the app should now be running and will always start on reboot.
 
 ### Logging
 
-You can use `journalctl -u alone-in-the-dark.service` to open the log.
+You can use `journalctl -u probe.service` to open the log.

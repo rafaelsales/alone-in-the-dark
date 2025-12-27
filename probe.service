@@ -1,5 +1,5 @@
 [Unit]
-Description=Alone In The Dark
+Description=starlink-monitor
 After=network.target
 StartLimitIntervalSec=0
 
@@ -9,8 +9,8 @@ Restart=always
 RestartSec=1
 User=pi
 Group=pi
-WorkingDirectory=/home/pi/alone-in-the-dark/
-ExecStart=/home/pi/alone-in-the-dark/alone-in-the-dark
+WorkingDirectory=/home/pi/starlink-monitor/
+ExecStart=/home/pi/starlink-monitor/probe
 
 [Install]
 WantedBy=multi-user.target
