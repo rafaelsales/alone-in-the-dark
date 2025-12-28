@@ -123,7 +123,7 @@ class Weather
         JSON.parse(response)
       rescue => e
         warn "Weather fetch failed: #{e.message}"
-        []
+        {}
       end
 
     {

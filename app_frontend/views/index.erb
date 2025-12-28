@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alone in the Dark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+      --border: #30363d;
+      --accent: #58a6ff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse at top, rgba(88, 166, 255, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom right, rgba(35, 154, 59, 0.05) 0%, transparent 40%);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      background: rgba(22, 27, 34, 0.85);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .logo {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo::before {
+      content: '◉';
+      color: #239a3b;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .stats {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 11px;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+    }
+
+    .stat-value {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .stat-icon {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    .stat-icon.outage { background: #000000; border: 1px solid var(--border); }
+    .stat-icon.connectivity { background: #e70202; }
+    .stat-icon.firmware { background: #ababab; }
+    .stat-icon.weather { background: var(--accent); }
+
+    main {
+      padding: 32px 0;
+    }
+
+    .grid-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .ping-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      justify-content: flex-start;
+    }
+
+    .ping-square {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      position: relative;
+    }
+
+    .ping-square:hover {
+      transform: scale(1.8);
+      z-index: 10;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    }
+
+    .tooltip {
+      position: fixed;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 11px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      pointer-events: none;
+      z-index: 1000;
+      white-space: pre-line;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      display: none;
+      max-width: 300px;
+    }
+
+    .tooltip.visible {
+      display: block;
+    }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state h2 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container header-content">
+      <div class="logo">Alone in the Dark</div>
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-icon outage"></span>
+          <span class="stat-label">Power outage:</span>
+          <span class="stat-value"><%= time_ago(@last_power_outage) %></span>
+        </div>
+        <div class="stat">
+          <span class="stat-icon connectivity"></span>
+          <span class="stat-label">Connectivity loss:</span>
+          <span class="stat-value"><%= time_ago(@last_connectivity_loss) %></span>
+        </div>
+        <div class="stat">
+          <span class="stat-icon firmware"></span>
+          <span class="stat-label">Firmware update:</span>
+          <span class="stat-value"><%= time_ago(@last_firmware_update) %></span>
+        </div>
+        <% if @current_weather %>
+        <div class="stat">
+          <span class="stat-icon weather"></span>
+          <span class="stat-label">Weather:</span>
+          <span class="stat-value"><%= @current_weather %></span>
+        </div>
+        <% end %>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <% if @pings.empty? %>
+      <div class="empty-state">
+        <h2>No ping data yet</h2>
+        <p>Start the probe to begin collecting connectivity data.</p>
+      </div>
+      <% else %>
+      <div class="grid-container">
+        <div class="ping-grid">
+          <% @pings.each_with_index do |ping, i| %>
+            <% prev_ping = @pings[i + 1] %>
+            <% color = ping_color(ping, prev_ping) %>
+            <div
+              class="ping-square"
+              style="background-color: <%= color %>"
+              data-tooltip="<%= format_tooltip(ping).gsub('"', '&quot;') %>"
+            ></div>
+          <% end %>
+        </div>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-color" style="background: #239a3b"></div>
+            <span>0-40ms</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #a1d736"></div>
+            <span>41-80ms</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #fff308"></div>
+            <span>80ms+</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #ababab"></div>
+            <span>Firmware update</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #e70202"></div>
+            <span>No connectivity</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #000000; border: 1px solid #30363d"></div>
+            <span>Power outage</span>
+          </div>
+        </div>
+      </div>
+      <% end %>
+    </div>
+  </main>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    const tooltip = document.getElementById('tooltip');
+    const squares = document.querySelectorAll('.ping-square');
+
+    squares.forEach(square => {
+      square.addEventListener('mouseenter', (e) => {
+        const text = square.getAttribute('data-tooltip');
+        tooltip.textContent = text;
+        tooltip.classList.add('visible');
+        positionTooltip(e);
+      });
+
+      square.addEventListener('mousemove', positionTooltip);
+
+      square.addEventListener('mouseleave', () => {
+        tooltip.classList.remove('visible');
+      });
+    });
+
+    function positionTooltip(e) {
+      const x = e.clientX + 12;
+      const y = e.clientY + 12;
+
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const maxX = window.innerWidth - tooltipRect.width - 12;
+      const maxY = window.innerHeight - tooltipRect.height - 12;
+
+      tooltip.style.left = Math.min(x, maxX) + 'px';
+      tooltip.style.top = Math.min(y, maxY) + 'px';
+    }
+  </script>
+</body>
+</html>
+
