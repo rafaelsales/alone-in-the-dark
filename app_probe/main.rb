@@ -96,7 +96,14 @@ class Internet
   end
 
   def fetch_router_state
-    `grpcurl -plaintext -d '{"get_status":{}}' 192.168.100.1:9200 SpaceX.API.Device.Device/Handle 2>&1`
+    output = `grpcurl -plaintext -d '{"get_status":{}}' 192.168.100.1:9200 SpaceX.API.Device.Device/Handle 2>&1`
+    data = JSON.parse(output)
+    data['dishGetStatus']['deviceInfo']['id'] = '[REDACTED]' if data.dig('dishGetStatus', 'deviceInfo', 'id')
+    JSON.generate(data)
+  rescue JSON::ParserError => e
+    warn "Failed to parse the router state: #{e.message}"
+    warn "Output: #{output}"
+    nil
   end
 
   private
