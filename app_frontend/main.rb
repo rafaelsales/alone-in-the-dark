@@ -159,10 +159,48 @@ helpers do
 
     "#{temp}°C, #{condition}"
   end
+
+  def group_pings_by_day(pings)
+    pings.group_by do |ping|
+      parse_utc(ping['datetime']).strftime('%Y-%m-%d')
+    end.sort_by { |date, _| date }.reverse.to_h
+  end
+
+  def group_pings_by_day_and_hour(pings)
+    # First group by day
+    by_day = pings.group_by do |ping|
+      parse_utc(ping['datetime']).strftime('%Y-%m-%d')
+    end.sort_by { |date, _| date }.reverse.to_h
+
+    # Then group each day's pings by hour, with earlier pings first within each hour
+    by_day.transform_values do |day_pings|
+      day_pings.group_by do |ping|
+        parse_utc(ping['datetime']).hour
+      end.sort_by { |hour, _| hour }.reverse.to_h.transform_values(&:reverse)
+    end
+  end
+
+  def format_day_label(date_str)
+    date = Date.parse(date_str)
+    today = Date.today
+
+    if date == today
+      'Today'
+    elsif date == today - 1
+      'Yesterday'
+    else
+      date.strftime('%b %d')
+    end
+  end
+
+  def format_hour_label(hour)
+    format('%02d:00', hour)
+  end
 end
 
 get '/' do
   @pings = fetch_pings
+  @pings_json = @pings.to_json
   @last_power_outage = find_last_power_outage(@pings)
   @last_connectivity_loss = find_last_connectivity_loss(@pings)
   @last_firmware_update = find_last_firmware_update(@pings)

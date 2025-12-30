@@ -123,13 +123,49 @@
       border-radius: 8px;
       padding: 20px;
       overflow-x: auto;
+      width: fit-content;
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    .days-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .hour-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .day-label {
+      font-size: 9px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      min-width: 50px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .day-label.empty {
+      visibility: hidden;
+    }
+
+    .hour-label {
+      font-size: 9px;
+      color: var(--text-muted);
+      min-width: 38px;
+      text-align: right;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
     }
 
     .ping-grid {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 2px;
-      justify-content: flex-start;
     }
 
     .ping-square {
@@ -235,35 +271,19 @@
 
   <main>
     <div class="container">
-      <% if @pings.empty? %>
-      <div class="empty-state">
-        <h2>No ping data yet</h2>
-        <p>Start the probe to begin collecting connectivity data.</p>
-      </div>
-      <% else %>
       <div class="grid-container">
-        <div class="ping-grid">
-          <% @pings.each_with_index do |ping, i| %>
-            <% prev_ping = @pings[i + 1] %>
-            <% color = ping_color(ping, prev_ping) %>
-            <div
-              class="ping-square"
-              style="background-color: <%= color %>"
-              data-tooltip="<%= format_tooltip(ping).gsub('"', '&quot;') %>"
-            ></div>
-          <% end %>
-        </div>
+        <div class="days-grid" id="days-grid"></div>
         <div class="legend">
           <div class="legend-item">
-            <div class="legend-color" style="background: #239a3b"></div>
+            <div class="legend-color" style="background: #196127"></div>
             <span>0-40ms</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color" style="background: #a1d736"></div>
+            <div class="legend-color" style="background: #239a3b"></div>
             <span>41-80ms</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color" style="background: #fff308"></div>
+            <div class="legend-color" style="background: #f8c300"></div>
             <span>80ms+</span>
           </div>
           <div class="legend-item">
@@ -280,42 +300,180 @@
           </div>
         </div>
       </div>
-      <% end %>
     </div>
   </main>
 
   <div class="tooltip" id="tooltip"></div>
 
   <script>
-    const tooltip = document.getElementById('tooltip');
-    const squares = document.querySelectorAll('.ping-square');
+    const POWER_OUTAGE_GAP = 120;
+    const pings = <%= @pings_json %>;
 
-    squares.forEach(square => {
-      square.addEventListener('mouseenter', (e) => {
-        const text = square.getAttribute('data-tooltip');
-        tooltip.textContent = text;
-        tooltip.classList.add('visible');
-        positionTooltip(e);
-      });
-
-      square.addEventListener('mousemove', positionTooltip);
-
-      square.addEventListener('mouseleave', () => {
-        tooltip.classList.remove('visible');
-      });
-    });
-
-    function positionTooltip(e) {
-      const x = e.clientX + 12;
-      const y = e.clientY + 12;
-
-      const tooltipRect = tooltip.getBoundingClientRect();
-      const maxX = window.innerWidth - tooltipRect.width - 12;
-      const maxY = window.innerHeight - tooltipRect.height - 12;
-
-      tooltip.style.left = Math.min(x, maxX) + 'px';
-      tooltip.style.top = Math.min(y, maxY) + 'px';
+    function parseUTC(datetimeStr) {
+      return new Date(datetimeStr + 'Z');
     }
+
+    function detectFirmwareUpdate(routerState) {
+      if (!routerState) return false;
+      const lower = routerState.toLowerCase();
+      return lower.includes('software_update') || lower.includes('updating') || lower.includes('reboot');
+    }
+
+    function isPowerOutage(ping, prevPing) {
+      if (!prevPing) return false;
+      const current = parseUTC(ping.datetime);
+      const previous = parseUTC(prevPing.datetime);
+      return Math.abs(previous - current) > POWER_OUTAGE_GAP * 1000;
+    }
+
+    function getPingColor(ping, prevPing) {
+      if (prevPing && isPowerOutage(ping, prevPing)) return '#000000';
+      if (ping.success === 0) {
+        return detectFirmwareUpdate(ping.router_state) ? '#ababab' : '#e70202';
+      }
+      const latency = ping.dns_latency || 0;
+      if (latency <= 40) return '#196127';
+      if (latency <= 80) return '#239a3b';
+      return '#f8c300';
+    }
+
+    function formatTooltip(ping) {
+      const parts = [];
+      if (ping.success === 1) {
+        parts.push(`${ping.dns_latency}ms`);
+      } else {
+        parts.push('No connection');
+      }
+      if (ping.weather_temperature_celsius != null) {
+        parts.push(`${Math.round(ping.weather_temperature_celsius)}°C`);
+      }
+      if (ping.weather_cloud_cover_percentage != null) {
+        parts.push(`${ping.weather_cloud_cover_percentage}% clouds`);
+      }
+      if (ping.weather_wind_speed_kmh != null) {
+        parts.push(`${Math.round(ping.weather_wind_speed_kmh)} km/h wind`);
+      }
+      const localDate = parseUTC(ping.datetime);
+      const dateStr = localDate.toLocaleString();
+      const dnsInfo = ping.dns_ip ? ` • DNS: ${ping.dns_ip}` : '';
+      return `${dateStr}${dnsInfo}\n${parts.join(' • ')}`;
+    }
+
+    function formatDayLabel(date) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const d = new Date(date);
+      d.setHours(0, 0, 0, 0);
+
+      if (d.getTime() === today.getTime()) return 'Today';
+      if (d.getTime() === yesterday.getTime()) return 'Yesterday';
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function formatHourLabel(hour) {
+      return String(hour).padStart(2, '0') + ':00';
+    }
+
+    function groupPingsByDayAndHour(pings) {
+      const byDayHour = new Map();
+
+      pings.forEach(ping => {
+        const localDate = parseUTC(ping.datetime);
+        const dayKey = localDate.toDateString();
+        const hour = localDate.getHours();
+
+        if (!byDayHour.has(dayKey)) {
+          byDayHour.set(dayKey, new Map());
+        }
+        const dayMap = byDayHour.get(dayKey);
+        if (!dayMap.has(hour)) {
+          dayMap.set(hour, []);
+        }
+        dayMap.get(hour).push(ping);
+      });
+
+      // Sort days descending (most recent first)
+      const sortedDays = [...byDayHour.entries()].sort((a, b) => {
+        return new Date(b[0]) - new Date(a[0]);
+      });
+
+      // Sort hours descending within each day, but pings ascending within each hour
+      return sortedDays.map(([day, hourMap]) => {
+        const sortedHours = [...hourMap.entries()]
+          .sort((a, b) => b[0] - a[0])
+          .map(([hour, hourPings]) => [hour, hourPings.reverse()]);
+        return [day, sortedHours];
+      });
+    }
+
+    function renderGrid() {
+      const container = document.getElementById('days-grid');
+
+      if (pings.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <h2>No ping data yet</h2>
+            <p>Start the probe to begin collecting connectivity data.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const grouped = groupPingsByDayAndHour(pings);
+      let html = '';
+
+      grouped.forEach(([day, hours]) => {
+        hours.forEach(([hour, hourPings], idx) => {
+          html += `<div class="hour-row">`;
+          html += `<div class="day-label${idx > 0 ? ' empty' : ''}">${formatDayLabel(day)}</div>`;
+          html += `<div class="hour-label">${formatHourLabel(hour)}</div>`;
+          html += `<div class="ping-grid">`;
+
+          hourPings.forEach((ping, i) => {
+            const prevPing = hourPings[i + 1] || pings[pings.indexOf(ping) + 1];
+            const color = getPingColor(ping, prevPing);
+            const tooltip = formatTooltip(ping).replace(/"/g, '&quot;');
+            html += `<div class="ping-square" style="background-color: ${color}" data-tooltip="${tooltip}"></div>`;
+          });
+
+          html += `</div></div>`;
+        });
+      });
+
+      container.innerHTML = html;
+      setupTooltips();
+    }
+
+    function setupTooltips() {
+      const tooltip = document.getElementById('tooltip');
+      const squares = document.querySelectorAll('.ping-square');
+
+      squares.forEach(square => {
+        square.addEventListener('mouseenter', (e) => {
+          tooltip.textContent = square.getAttribute('data-tooltip');
+          tooltip.classList.add('visible');
+          positionTooltip(e);
+        });
+        square.addEventListener('mousemove', positionTooltip);
+        square.addEventListener('mouseleave', () => {
+          tooltip.classList.remove('visible');
+        });
+      });
+
+      function positionTooltip(e) {
+        const x = e.clientX + 12;
+        const y = e.clientY + 12;
+        const tooltipRect = tooltip.getBoundingClientRect();
+        const maxX = window.innerWidth - tooltipRect.width - 12;
+        const maxY = window.innerHeight - tooltipRect.height - 12;
+        tooltip.style.left = Math.min(x, maxX) + 'px';
+        tooltip.style.top = Math.min(y, maxY) + 'px';
+      }
+    }
+
+    renderGrid();
   </script>
 </body>
 </html>
