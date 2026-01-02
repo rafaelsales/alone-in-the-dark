@@ -15,7 +15,7 @@ POWER_OUTAGE_GAP = 120
 
 configure do
   set :bind, '0.0.0.0'
-  set :port, 4567
+  set :port, 4001
 end
 
 helpers do
