@@ -1,5 +1,5 @@
 [Unit]
-Description=starlink-monitor
+Description=NetPulse - Probe Service
 After=network.target
 StartLimitIntervalSec=0
 
@@ -9,8 +9,8 @@ Restart=always
 RestartSec=1
 User=pi
 Group=pi
-WorkingDirectory=/home/pi/starlink-monitor/
-ExecStart=/home/pi/starlink-monitor/probe
+WorkingDirectory=/opt/netpulse/app_probe
+ExecStart=/opt/netpulse/app_probe/bin/probe
 
 [Install]
 WantedBy=multi-user.target
