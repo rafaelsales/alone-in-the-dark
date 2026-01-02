@@ -108,7 +108,7 @@
       border-radius: 2px;
     }
 
-    .stat-icon.outage { background: #000000; border: 1px solid var(--border); }
+    .stat-icon.outage { background: transparent; border: 1px solid var(--border); }
     .stat-icon.connectivity { background: #e70202; }
     .stat-icon.firmware { background: #ababab; }
     .stat-icon.weather { background: var(--accent); }
@@ -162,6 +162,37 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .minute-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .minute-header-spacer {
+      min-width: 50px;
+      flex-shrink: 0;
+    }
+
+    .minute-header-hour-spacer {
+      min-width: 38px;
+      flex-shrink: 0;
+    }
+
+    .minute-labels {
+      display: flex;
+      position: relative;
+      width: 100%;
+    }
+
+    .minute-label {
+      position: absolute;
+      font-size: 8px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      transform: translateX(-50%);
+    }
+
     .ping-grid {
       display: flex;
       flex-wrap: nowrap;
@@ -169,18 +200,27 @@
     }
 
     .ping-square {
-      width: 10px;
-      height: 10px;
+      width: 12px;
+      height: 12px;
       border-radius: 2px;
       cursor: pointer;
       transition: transform 0.1s ease, box-shadow 0.1s ease;
       position: relative;
     }
 
-    .ping-square:hover {
+    .ping-square:hover:not(.empty) {
       transform: scale(1.8);
       z-index: 10;
       box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    }
+
+    .ping-square:hover {
+      z-index: 10;
+    }
+
+    .ping-square.empty {
+      background: transparent;
+      cursor: pointer;
     }
 
     .tooltip {
@@ -220,8 +260,8 @@
     }
 
     .legend-color {
-      width: 10px;
-      height: 10px;
+      width: 12px;
+      height: 12px;
       border-radius: 2px;
     }
 
@@ -295,7 +335,7 @@
             <span>No connectivity</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color" style="background: #000000; border: 1px solid #30363d"></div>
+            <div class="legend-color" style="background: #000000"></div>
             <span>Power outage</span>
           </div>
         </div>
@@ -306,7 +346,6 @@
   <div class="tooltip" id="tooltip"></div>
 
   <script>
-    const POWER_OUTAGE_GAP = 120;
     const pings = <%= @pings_json %>;
 
     function parseUTC(datetimeStr) {
@@ -319,15 +358,7 @@
       return lower.includes('software_update') || lower.includes('updating') || lower.includes('reboot');
     }
 
-    function isPowerOutage(ping, prevPing) {
-      if (!prevPing) return false;
-      const current = parseUTC(ping.datetime);
-      const previous = parseUTC(prevPing.datetime);
-      return Math.abs(previous - current) > POWER_OUTAGE_GAP * 1000;
-    }
-
-    function getPingColor(ping, prevPing) {
-      if (prevPing && isPowerOutage(ping, prevPing)) return '#000000';
+    function getPingColor(ping) {
       if (ping.success === 0) {
         return detectFirmwareUpdate(ping.router_state) ? '#ababab' : '#e70202';
       }
@@ -424,6 +455,18 @@
       const grouped = groupPingsByDayAndHour(pings);
       let html = '';
 
+      // Add minute indicator header
+      html += `<div class="minute-header">`;
+      html += `<div class="minute-header-spacer"></div>`;
+      html += `<div class="minute-header-hour-spacer"></div>`;
+      html += `<div class="minute-labels">`;
+      for (let m = 0; m < 60; m++) {
+        // Position based on 12px squares + 2px gaps = 14px per minute, +6px to center on box
+        const pos = m * 14 + 6;
+        html += `<span class="minute-label" style="left: ${pos}px">${m}</span>`;
+      }
+      html += `</div></div>`;
+
       grouped.forEach(([day, hours]) => {
         hours.forEach(([hour, hourPings], idx) => {
           html += `<div class="hour-row">`;
@@ -431,12 +474,33 @@
           html += `<div class="hour-label">${formatHourLabel(hour)}</div>`;
           html += `<div class="ping-grid">`;
 
-          hourPings.forEach((ping, i) => {
-            const prevPing = hourPings[i + 1] || pings[pings.indexOf(ping) + 1];
-            const color = getPingColor(ping, prevPing);
-            const tooltip = formatTooltip(ping).replace(/"/g, '&quot;');
-            html += `<div class="ping-square" style="background-color: ${color}" data-tooltip="${tooltip}"></div>`;
+          // Create a map of minute -> ping for this hour
+          const pingsByMinute = new Map();
+          hourPings.forEach(ping => {
+            const minute = parseUTC(ping.datetime).getMinutes();
+            pingsByMinute.set(minute, ping);
           });
+
+          // Find the last data point minute in this hour
+          const lastDataPointMinute = hourPings.length > 0
+            ? Math.max(...hourPings.map(p => parseUTC(p.datetime).getMinutes()))
+            : -1;
+
+          // Render all 60 minute slots
+          for (let m = 0; m < 60; m++) {
+            const ping = pingsByMinute.get(m);
+            if (ping) {
+              const color = getPingColor(ping);
+              const tooltip = formatTooltip(ping).replace(/"/g, '&quot;');
+              html += `<div class="ping-square" style="background-color: ${color}" data-tooltip="${tooltip}"></div>`;
+            } else if (m <= lastDataPointMinute) {
+              // Fill with black box before last data point (power outage)
+              html += `<div class="ping-square" style="background-color: #000000" data-tooltip="Power outage"></div>`;
+            } else {
+              // Keep empty after last data point (might be in the future)
+              html += `<div class="ping-square empty" data-tooltip="No data"></div>`;
+            }
+          }
 
           html += `</div></div>`;
         });

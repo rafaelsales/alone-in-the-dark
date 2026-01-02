@@ -22,7 +22,12 @@ class PingTracker
       weather = Weather.new.fetch
       record_ping(result, weather)
       print_progress_bar(result[:success])
-      sleep 60
+
+      # Calculate sleep to ensure next check happens at second 00 of next minute
+      now = Time.now
+      seconds_into_minute = now.sec + (now.usec / 1_000_000.0)
+      sleep_duration = 60 - seconds_into_minute
+      sleep sleep_duration
     end
   end
 
