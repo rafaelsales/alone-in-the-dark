@@ -1,9 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# Requires: gem install sqlite3 --user-install
 require 'sqlite3'
 
-DATABASE_PATH = File.join(__dir__, 'pings.db')
+DATABASE_DIR = '/opt/net-pulse/db'
+DATABASE_PATH = File.join(DATABASE_DIR, 'pings.db')
+
+Dir.mkdir(DATABASE_DIR) unless Dir.exist?(DATABASE_DIR)
 
 db = SQLite3::Database.new(DATABASE_PATH)
 
