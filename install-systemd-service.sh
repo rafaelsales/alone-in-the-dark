@@ -44,11 +44,6 @@ sudo cp "$TEMP_DIR/frontend.service" /etc/systemd/system/
 # Clean up temp files
 rm -rf "$TEMP_DIR"
 
-# Copy service files
-echo "Copying service files..."
-sudo cp /opt/net-pulse/probe.service /etc/systemd/system/
-sudo cp /opt/net-pulse/frontend.service /etc/systemd/system/
-
 # Reload systemd
 echo "Reloading systemd daemon..."
 sudo systemctl daemon-reload
