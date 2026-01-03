@@ -1,0 +1,3 @@
+#!/bin/bash
+sudo systemctl start probe.service
+sudo systemctl start frontend.service

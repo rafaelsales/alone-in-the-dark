@@ -1,0 +1,3 @@
+#!/bin/bash
+sudo systemctl restart probe.service
+sudo systemctl restart frontend.service
