@@ -26,14 +26,14 @@ TEMP_DIR=$(mktemp -d)
 sed -e "s|User=.*|User=$SERVICE_USER|g" \
     -e "s|Group=.*|Group=$SERVICE_USER|g" \
     -e "s|WorkingDirectory=.*|WorkingDirectory=$SCRIPT_DIR/app_probe|g" \
-    -e "s|ExecStart=.*|ExecStart=$SCRIPT_DIR/app_probe/bin/probe|g" \
+    -e "s|ExecStart=.*|ExecStart=$SCRIPT_DIR/bin/probe|g" \
     "$SCRIPT_DIR/probe.service" > "$TEMP_DIR/probe.service"
 
 # Generate frontend.service
 sed -e "s|User=.*|User=$SERVICE_USER|g" \
     -e "s|Group=.*|Group=$SERVICE_USER|g" \
     -e "s|WorkingDirectory=.*|WorkingDirectory=$SCRIPT_DIR/app_frontend|g" \
-    -e "s|ExecStart=.*|ExecStart=$SCRIPT_DIR/app_frontend/bin/frontend|g" \
+    -e "s|ExecStart=.*|ExecStart=$SCRIPT_DIR/bin/frontend|g" \
     "$SCRIPT_DIR/frontend.service" > "$TEMP_DIR/frontend.service"
 
 # Copy service files
