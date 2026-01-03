@@ -24,6 +24,7 @@ helpers do
   def db
     @db ||= SQLite3::Database.new(DATABASE_PATH, readonly: true).tap do |d|
       d.results_as_hash = true
+      d.busy_timeout = 5000  # Wait up to 5 seconds if database is locked
     end
   end
 

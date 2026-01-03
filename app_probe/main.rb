@@ -14,6 +14,9 @@ TIMEZONE = ENV.fetch('TIMEZONE', 'America/Sao_Paulo')
 class PingTracker
   def initialize
     @db = SQLite3::Database.new(DATABASE_PATH)
+    @db.busy_timeout = 5000  # Wait up to 5 seconds if database is locked
+    # Enable WAL mode for better concurrent access
+    @db.execute('PRAGMA journal_mode=WAL')
   end
 
   def run_forever
