@@ -16,7 +16,8 @@ POWER_OUTAGE_GAP = 120
 configure do
   set :bind, '0.0.0.0'
   set :port, 4001
-  set :permitted_hosts, [/.*/]
+  set :environment, :production
+  set :permitted_hosts, []
 end
 
 helpers do
