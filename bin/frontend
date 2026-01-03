@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+
+require 'pathname'
+ENV['BUNDLE_GEMFILE'] ||= File.expand_path("../app_frontend/Gemfile", __dir__)
+
+require 'rubygems'
+require 'bundler/setup'
+
+# Change to the app directory so relative paths work
+Dir.chdir(File.expand_path('../app_frontend', __dir__))
+
+# Load and run the Sinatra app
+require_relative '../app_frontend/main.rb'
+
+# Start the Sinatra app
+Sinatra::Application.run!
+

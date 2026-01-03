@@ -9,8 +9,8 @@ Restart=always
 RestartSec=1
 User=pi
 Group=pi
-WorkingDirectory=/opt/netpulse/app_frontend
-ExecStart=/opt/netpulse/app_frontend/bin/frontend
+WorkingDirectory=/opt/netpulse
+ExecStart=/opt/netpulse/bin/frontend
 
 [Install]
 WantedBy=multi-user.target

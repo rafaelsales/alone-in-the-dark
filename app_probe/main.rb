@@ -114,13 +114,16 @@ class Internet
   private
 
   def ping(ip)
-    output = `ping -c #{ATTEMPTS} -W #{TIMEOUT} #{ip} 2>&1`
-    success = !output.include?('100% packet loss')
+    os_timeout = RbConfig::CONFIG['host_os'] =~ /linux/i ? TIMEOUT : TIMEOUT * 1000
+
+    output = `ping -c #{ATTEMPTS} -W #{os_timeout} #{ip} 2>&1`
+    success = !(output =~ /100(\.0)?% packet loss/)
 
     latency = nil
+
     if success
       # Extract latency from any line like: time=21.7 ms (works for both Linux and macOS)
-      latency = output[/time=(\d+(?:\.\d+)?)\s*ms/, 1]&.to_f&.round
+      latency = output[/time=(\d+\.\d+) ms/, 1]&.to_f&.round
 
       unless latency
         warn "ERROR: Could not parse ping latency from output:"

@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+
+require 'pathname'
+ENV['BUNDLE_GEMFILE'] ||= File.expand_path("../app_probe/Gemfile", __dir__)
+
+require 'rubygems'
+require 'bundler/setup'
+
+# Change to the app directory so relative paths work
+Dir.chdir(File.expand_path('../app_probe', __dir__))
+
+# Load and run the probe tracker
+require_relative '../app_probe/main.rb'
+
+PingTracker.new.run_forever
+
