@@ -20,7 +20,7 @@ end
 
 helpers do
   def db
-    @db ||= SQLite3::Database.new(DATABASE_PATH).tap do |d|
+    @db ||= SQLite3::Database.new(DATABASE_PATH, readonly: true).tap do |d|
       d.results_as_hash = true
     end
   end
