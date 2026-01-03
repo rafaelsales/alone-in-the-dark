@@ -44,21 +44,10 @@ sudo cp "$TEMP_DIR/frontend.service" /etc/systemd/system/
 # Clean up temp files
 rm -rf "$TEMP_DIR"
 
-# Install application to /opt if not already there
-if [ "$SCRIPT_DIR" != "/opt/netpulse" ]; then
-    echo "Installing application to /opt/netpulse..."
-    sudo mkdir -p /opt/netpulse
-    sudo cp -r "$SCRIPT_DIR"/* /opt/netpulse/
-    sudo chown -R root:root /opt/netpulse
-    echo "Setting up database directory permissions for user: $SERVICE_USER..."
-    sudo chown -R "$SERVICE_USER:$SERVICE_USER" /opt/netpulse/db
-    echo "Application installed to /opt/netpulse"
-fi
-
 # Copy service files
 echo "Copying service files..."
-sudo cp /opt/netpulse/probe.service /etc/systemd/system/
-sudo cp /opt/netpulse/frontend.service /etc/systemd/system/
+sudo cp /opt/net-pulse/probe.service /etc/systemd/system/
+sudo cp /opt/net-pulse/frontend.service /etc/systemd/system/
 
 # Reload systemd
 echo "Reloading systemd daemon..."
