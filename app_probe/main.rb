@@ -58,6 +58,7 @@ class PingTracker
       ]
     )
   end
+end
 
 class Internet
   PUBLIC_DNS = {
