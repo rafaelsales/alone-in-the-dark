@@ -4,7 +4,7 @@
 # Requires: gem install sqlite3 --user-install
 require 'sqlite3'
 
-DATABASE_DIR = '/opt/net-pulse/db'
+DATABASE_DIR = './db'
 DATABASE_PATH = File.join(DATABASE_DIR, 'pings.db')
 
 Dir.mkdir(DATABASE_DIR) unless Dir.exist?(DATABASE_DIR)
@@ -37,4 +37,3 @@ SQL
 
 puts "Database setup complete: #{DATABASE_PATH}"
 puts "Table 'pings' created successfully."
-
