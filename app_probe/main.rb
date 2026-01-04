@@ -15,16 +15,15 @@ class PingTracker
   def initialize
     @db = SQLite3::Database.new(DATABASE_PATH)
     @db.busy_timeout = 5000  # Wait up to 5 seconds if database is locked
-    # Enable WAL mode for better concurrent access
-    @db.execute('PRAGMA journal_mode=WAL')
+    @db.execute('PRAGMA journal_mode=WAL') # Enable WAL mode for better concurrent access
   end
 
   def run_forever
     loop do
-      result = Internet.new.check
+      ping = Internet.new.check
       weather = Weather.new.fetch
-      record_ping(result, weather)
-      print_progress_bar(result[:success])
+      record_ping(ping, weather)
+      puts({ ping:, weather: }.to_json)
 
       # Calculate sleep to ensure next check happens at second 00 of next minute
       now = Time.now
@@ -59,18 +58,6 @@ class PingTracker
       ]
     )
   end
-
-  def print_progress_bar(success)
-    @print_columns ||= 0
-    @print_columns += 1
-    print success ? '✓' : '✗'
-
-    if @print_columns == 120
-      puts ''
-      @print_columns = 0
-    end
-  end
-end
 
 class Internet
   PUBLIC_DNS = {
@@ -108,8 +95,8 @@ class Internet
     data = JSON.parse(output)
     data['dishGetStatus']['deviceInfo']['id'] = '[REDACTED]' if data.dig('dishGetStatus', 'deviceInfo', 'id')
     JSON.generate(data)
-  rescue JSON::ParserError => e
-    warn "Failed to parse the router state: #{e.message}"
+  rescue => e
+    warn "Failed to fetch the router state: #{e.message}"
     warn "Output: #{output}"
     nil
   end
@@ -126,7 +113,7 @@ class Internet
 
     if success
       # Extract latency from any line like: time=21.7 ms (works for both Linux and macOS)
-      latency = output[/time=(\d+\.\d+) ms/, 1]&.to_f&.round
+      latency = output[/time=(\d+\.?\d*) ms/, 1]&.to_f&.round
 
       unless latency
         warn "ERROR: Could not parse ping latency from output:"
