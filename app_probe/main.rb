@@ -133,14 +133,16 @@ class Weather
             "latitude=#{LATITUDE}&longitude=#{LONGITUDE}" \
             '&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,cloud_cover' \
             "&timezone=#{TIMEZONE}&forecast_days=1"
+  TIMEOUT = 2
+  MAX_RETRIES = 2
 
   def fetch
     data =
       begin
-        response = Net::HTTP.get(URI(API_URL))
+        response = fetch_with_retry
         JSON.parse(response)
       rescue => e
-        warn "Weather fetch failed: #{e.message}"
+        warn "Weather fetch failed after #{MAX_RETRIES + 1} attempts: #{e.message}"
         {}
       end
 
@@ -151,5 +153,34 @@ class Weather
       wind_speed_kmh: data.dig('current', 'wind_speed_10m'),
       cloud_cover_percentage: data.dig('current', 'cloud_cover')
     }
+  end
+
+  private
+
+  def fetch_with_retry
+    retries = 0
+    uri = URI(API_URL)
+
+    begin
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      http.open_timeout = TIMEOUT
+      http.read_timeout = TIMEOUT
+
+      request = Net::HTTP::Get.new(uri.request_uri)
+      response = http.request(request)
+
+      raise "HTTP #{response.code}: #{response.message}" unless response.is_a?(Net::HTTPSuccess)
+
+      response.body
+    rescue => e
+      if retries < MAX_RETRIES
+        retries += 1
+        warn "Weather fetch attempt #{retries} failed: #{e.message}, retrying..."
+        retry
+      else
+        raise
+      end
+    end
   end
 end
