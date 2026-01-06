@@ -1,3 +1,15 @@
 #!/bin/bash
-sudo systemctl restart probe.service
-sudo systemctl restart frontend.service
+SERVICE="${1:-}"
+
+if [ -z "$SERVICE" ]; then
+  # No argument provided, restart both services
+  sudo systemctl restart probe.service
+  sudo systemctl restart frontend.service
+elif [ "$SERVICE" = "probe" ]; then
+  sudo systemctl restart probe.service
+elif [ "$SERVICE" = "frontend" ]; then
+  sudo systemctl restart frontend.service
+else
+  echo "Error: Invalid service '$SERVICE'. Use 'probe', 'frontend', or no argument for both."
+  exit 1
+fi

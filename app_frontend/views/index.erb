@@ -315,24 +315,28 @@
         <div class="days-grid" id="days-grid"></div>
         <div class="legend">
           <div class="legend-item">
-            <div class="legend-color" style="background: #196127"></div>
-            <span>0-40ms</span>
+            <div class="legend-color" style="background: #1c7c2f"></div>
+            <span>0-30ms</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color" style="background: #239a3b"></div>
-            <span>41-80ms</span>
+            <div class="legend-color" style="background: #41a455"></div>
+            <span>31-60ms</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color" style="background: #f8c300"></div>
-            <span>80ms+</span>
+            <div class="legend-color" style="background: #FFE711"></div>
+            <span>61-120ms</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color" style="background: #ababab"></div>
-            <span>Firmware update</span>
+            <div class="legend-color" style="background: #FF9800"></div>
+            <span>120ms+</span>
           </div>
           <div class="legend-item">
             <div class="legend-color" style="background: #e70202"></div>
             <span>No connectivity</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #ababab"></div>
+            <span>Firmware update</span>
           </div>
           <div class="legend-item">
             <div class="legend-color" style="background: #000000"></div>
@@ -352,20 +356,9 @@
       return new Date(datetimeStr + 'Z');
     }
 
-    function detectFirmwareUpdate(routerState) {
-      if (!routerState) return false;
-      const lower = routerState.toLowerCase();
-      return lower.includes('software_update') || lower.includes('updating') || lower.includes('reboot');
-    }
-
     function getPingColor(ping) {
-      if (ping.success === 0) {
-        return detectFirmwareUpdate(ping.router_state) ? '#ababab' : '#e70202';
-      }
-      const latency = ping.dns_latency || 0;
-      if (latency <= 40) return '#196127';
-      if (latency <= 80) return '#239a3b';
-      return '#f8c300';
+      // Color is now calculated on the backend
+      return ping.color || '#000000';
     }
 
     function formatTooltip(ping) {

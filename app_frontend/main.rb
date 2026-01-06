@@ -52,24 +52,25 @@ helpers do
   def ping_color(ping, prev_ping)
     # Check for power outage (gap in data)
     if prev_ping && power_outage?(ping, prev_ping)
-      return '#000000'
+      return '#000000' # Black
     end
 
     # Check connectivity
     if ping['success'] == 0
       # Check if firmware update
       if detect_firmware_update?(ping['router_state'])
-        return '#ababab'
+        return '#ababab' # Gray
       end
-      return '#e70202'
+      return '#e70202' # Red
     end
 
     # Latency-based colors
     latency = ping['dns_latency'].to_i
     case latency
-    when 0..40 then '#196127'
-    when 41..80 then '#239a3b'
-    else '#f8c300'
+    when 0..30 then '#1c7c2f' # Forest Green
+    when 31..60 then '#41a455' # Chateau Green
+    when 61..120 then '#FFE711' # Yellow
+    else '#FF9800' # Orange
     end
   end
 
@@ -203,7 +204,14 @@ end
 
 get '/' do
   @pings = fetch_pings
-  @pings_json = @pings.to_json
+
+  # Enrich pings with colors calculated on the backend
+  @pings_with_colors = @pings.each_with_index.map do |ping, i|
+    prev_ping = i < @pings.length - 1 ? @pings[i + 1] : nil
+    ping.merge('color' => ping_color(ping, prev_ping))
+  end
+
+  @pings_json = @pings_with_colors.to_json
   @last_power_outage = find_last_power_outage(@pings)
   @last_connectivity_loss = find_last_connectivity_loss(@pings)
   @last_firmware_update = find_last_firmware_update(@pings)
