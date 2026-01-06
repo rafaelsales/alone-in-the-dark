@@ -362,25 +362,39 @@
     }
 
     function formatTooltip(ping) {
-      const parts = [];
-      if (ping.success === 1) {
-        parts.push(`${ping.dns_latency}ms`);
-      } else {
-        parts.push('No connection');
-      }
-      if (ping.weather_temperature_celsius != null) {
-        parts.push(`${Math.round(ping.weather_temperature_celsius)}°C`);
-      }
-      if (ping.weather_cloud_cover_percentage != null) {
-        parts.push(`${ping.weather_cloud_cover_percentage}% clouds`);
-      }
-      if (ping.weather_wind_speed_kmh != null) {
-        parts.push(`${Math.round(ping.weather_wind_speed_kmh)} km/h wind`);
-      }
+      // Use the previous/existing date formatting (local time, human-readable)
       const localDate = parseUTC(ping.datetime);
-      const dateStr = localDate.toLocaleString();
-      const dnsInfo = ping.dns_ip ? ` • DNS: ${ping.dns_ip}` : '';
-      return `${dateStr}${dnsInfo}\n${parts.join(' • ')}`;
+      const dateStr = [
+        localDate.toISOString().slice(0, 10),
+        localDate.toTimeString().slice(0, 8)
+      ].join(' • ');
+
+      // Connection info logic (Ruby order)
+      let connectionInfo;
+      if (ping.success === 1) {
+        connectionInfo = [`${ping.dns_latency}ms`, `DNS: ${ping.dns_ip}`].join(' • ');
+      } else {
+        connectionInfo = ' • No connection';
+      }
+
+      // Weather info logic (block included only if temperature is present, Ruby order)
+      let weatherInfo = '';
+      if (ping.weather_temperature_celsius != null) {
+        weatherInfo = [
+          [
+            `${Math.round(ping.weather_temperature_celsius)}°C`,
+            `${ping.weather_humidity_percentage}% humidity`,
+            `${Math.round(ping.weather_wind_speed_kmh)} km/h wind`
+          ].join(' • '),
+          [
+            `${ping.weather_cloud_cover_percentage}% clouds`,
+            `${ping.weather_precipitation_mm}mm precipitation`
+          ].join(' • ')
+        ].join('\n');
+      }
+
+      // Join all sections, as in Ruby
+      return [dateStr, connectionInfo, weatherInfo].filter(x => x).join('\n');
     }
 
     function formatDayLabel(date) {
@@ -484,7 +498,7 @@
             const ping = pingsByMinute.get(m);
             if (ping) {
               const color = getPingColor(ping);
-              const tooltip = formatTooltip(ping).replace(/"/g, '&quot;');
+              const tooltip = formatTooltip(ping).replace(/"/g, '&quot;').replace(/\n/g, '\\n');
               html += `<div class="ping-square" style="background-color: ${color}" data-tooltip="${tooltip}"></div>`;
             } else if (m <= lastDataPointMinute) {
               // Fill with black box before last data point (power outage)
@@ -509,7 +523,9 @@
 
       squares.forEach(square => {
         square.addEventListener('mouseenter', (e) => {
-          tooltip.textContent = square.getAttribute('data-tooltip');
+          const tooltipText = square.getAttribute('data-tooltip');
+          // Replace literal \n with actual newlines
+          tooltip.textContent = tooltipText.replace(/\\n/g, '\n');
           tooltip.classList.add('visible');
           positionTooltip(e);
         });

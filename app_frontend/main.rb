@@ -119,49 +119,30 @@ helpers do
     "#{days}d ago"
   end
 
-  def format_tooltip(ping)
-    parts = []
-
-    if ping['success'] == 1
-      parts << "#{ping['dns_latency']}ms"
-    else
-      parts << 'No connection'
-    end
-
-    if ping['weather_temperature_celsius']
-      parts << "#{ping['weather_temperature_celsius'].round}°C"
-    end
-
-    if ping['weather_cloud_cover_percentage']
-      parts << "#{ping['weather_cloud_cover_percentage']}% clouds"
-    end
-
-    if ping['weather_wind_speed_kmh']
-      parts << "#{ping['weather_wind_speed_kmh'].round} km/h wind"
-    end
-
-    datetime = parse_utc(ping['datetime']).strftime('%Y-%m-%d %H:%M:%S UTC')
-    dns_info = ping['dns_ip'] ? " • DNS: #{ping['dns_ip']}" : ''
-
-    "#{datetime}#{dns_info}\n#{parts.join(' • ')}"
-  end
-
   def current_weather(pings)
     latest = pings.first
     return nil unless latest && latest['weather_temperature_celsius']
 
     temp = latest['weather_temperature_celsius'].round
-    clouds = latest['weather_cloud_cover_percentage'] || 0
+    humidity = latest['weather_humidity_percentage']
+    precipitation = latest['weather_precipitation_mm']
+    clouds = latest['weather_cloud_cover_percentage']
+    wind = latest['weather_wind_speed_kmh']
 
-    condition = case clouds
-    when 0..10 then 'clear'
-    when 11..30 then 'mostly clear'
-    when 31..60 then 'partly cloudy'
-    when 61..80 then 'mostly cloudy'
-    else 'overcast'
-    end
+    # Build weather display in same order as tooltip
+    # Line 1: temp, humidity, wind
+    line1_parts = []
+    line1_parts << "#{temp}°C"
+    line1_parts << "#{humidity}% humidity" if humidity
+    line1_parts << "#{wind.round}km/h wind" if wind
 
-    "#{temp}°C, #{condition}"
+    # Line 2: clouds, precipitation
+    line2_parts = []
+    line2_parts << "#{clouds}% clouds" if clouds
+    line2_parts << "#{precipitation}mm precipitation" if precipitation
+
+    # Combine all parts with separator
+    [line1_parts.join(' • '), line2_parts.join(' • ')].reject(&:empty?).join(' • ')
   end
 
   def group_pings_by_day(pings)
@@ -219,4 +200,3 @@ get '/' do
 
   erb :index
 end
-
